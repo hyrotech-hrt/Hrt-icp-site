@@ -1,9 +1,9 @@
 name: Deploy to ICP (assets)
 
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -30,12 +30,12 @@ jobs:
           DFX_IDENTITY_PEM: ${{ secrets.DFX_IDENTITY_PEM }}
         run: |
           mkdir -p ~/.config/dfx/identity/ci-identity
-          echo "$DFX_IDENTITY_PEM" > ~/.config/dfx/identity/ci-identity/identity.pem
+          printf "%s" "$DFX_IDENTITY_PEM" > ~/.config/dfx/identity/ci-identity/identity.pem
           chmod 600 ~/.config/dfx/identity/ci-identity/identity.pem
           dfx identity new ci-identity --storage-mode=plaintext || true
           dfx identity use ci-identity
           dfx deploy --network ic
-          dfx canister --network ic id www > canister_id.txt
+          dfx canister --network ic id www | tee canister_id.txt
           echo "SITE_URL=https://$(cat canister_id.txt).icp0.io" >> $GITHUB_ENV
 
       - name: Show URL
