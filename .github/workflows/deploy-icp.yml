@@ -1,0 +1,43 @@
+name: Deploy to ICP (assets)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dfx
+        run: |
+          sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
+          echo "$HOME/bin" >> $GITHUB_PATH
+          dfx --version
+
+      - name: Local validate
+        run: |
+          dfx start --clean --background
+          dfx deploy
+          dfx stop
+
+      - name: Deploy to mainnet
+        if: env.DEPLOY_TO_IC == 'true'
+        env:
+          DEPLOY_TO_IC: ${{ secrets.DEPLOY_TO_IC }}
+          DFX_IDENTITY_PEM: ${{ secrets.DFX_IDENTITY_PEM }}
+        run: |
+          mkdir -p ~/.config/dfx/identity/ci-identity
+          echo "$DFX_IDENTITY_PEM" > ~/.config/dfx/identity/ci-identity/identity.pem
+          chmod 600 ~/.config/dfx/identity/ci-identity/identity.pem
+          dfx identity new ci-identity --storage-mode=plaintext || true
+          dfx identity use ci-identity
+          dfx deploy --network ic
+          dfx canister --network ic id www > canister_id.txt
+          echo "SITE_URL=https://$(cat canister_id.txt).icp0.io" >> $GITHUB_ENV
+
+      - name: Show URL
+        if: env.DEPLOY_TO_IC == 'true'
+        run: echo "Live: $SITE_URL"

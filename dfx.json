@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "canisters": {
+    "www": {
+      "type": "assets",
+      "source": "www"
+    }
+  }
+}
